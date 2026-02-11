@@ -37,16 +37,19 @@ public class PlayerController : MonoBehaviour
     private float LookSensitivity;
     [SerializeField]
     private float walkSpeed;
+
     //카메라 한계
     [SerializeField]
     private float CameraRotationLimit;
     private float CurrentCameraRotationX = 0f;
-    //컴포넌트
+
+    //필요한 컴포넌트
     [SerializeField]
     private Camera theCamera;
     private Rigidbody m_Rigidbody;
     private CapsuleCollider m_CapsuleCollider;
-
+    [SerializeField]
+    private GunController theGunController;
 
     void Start()
     {
@@ -55,6 +58,7 @@ public class PlayerController : MonoBehaviour
         ApplySpeed = walkSpeed;
         OriginPosY = theCamera.transform.localPosition.y;
         ApplyCrouchPosY = OriginPosY;
+        theGunController = FindAnyObjectByType<GunController>();
     }
     private void FixedUpdate()
     {
@@ -133,6 +137,9 @@ public class PlayerController : MonoBehaviour
     {
         if (isCrouch)
             Crouch();
+
+        theGunController.CancelFineSight();
+        
         isRun = true;
         ApplySpeed = RunSpeed;
     }
