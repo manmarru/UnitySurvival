@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class Hand : MonoBehaviour
 {
-    public string haneName; // 맨손이나 너클 구분
+    public string handName; // 맨손이나 너클 구분
     public float range; // 공격범위
     public int Damage; // 공격력
     public float workSpeed; // 작업속도

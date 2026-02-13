@@ -22,9 +22,14 @@ public class PlayerController : MonoBehaviour
     private float JumpForce;
 
     //상태 변수
+    private bool isWalk = false;
     private bool isRun = false;
     private bool isCrouch = false;
     private bool isGround = true;
+
+    // 움직임 체크 변수
+    private Vector3 lastPos;
+
 
     //앉았을 때 얼마나 앉을지 결정하는 변수
     [SerializeField]
@@ -50,27 +55,35 @@ public class PlayerController : MonoBehaviour
     private CapsuleCollider m_CapsuleCollider;
     [SerializeField]
     private GunController theGunController;
+    private Crosshair theCrosshair;
 
     void Start()
     {
         m_CapsuleCollider = GetComponent<CapsuleCollider>();
         m_Rigidbody = GetComponent<Rigidbody>();
+        theGunController = FindAnyObjectByType<GunController>();
+        theCrosshair = FindAnyObjectByType<Crosshair>();
+
+        // 초기화
         ApplySpeed = walkSpeed;
         OriginPosY = theCamera.transform.localPosition.y;
         ApplyCrouchPosY = OriginPosY;
-        theGunController = FindAnyObjectByType<GunController>();
     }
+
     private void FixedUpdate()
     {
         GroundCheck();
         KeyInput();
         Move();
     }
+
     private void Update()
     {
         CameraRotation();
         CharacterRotation();
+        MoveCheck();
     }
+
     private void KeyInput()
     {
         if (Keyboard.current.leftCtrlKey.wasPressedThisFrame)
@@ -88,10 +101,13 @@ public class PlayerController : MonoBehaviour
         else
             RunningCancel();
     }
+
     private void Crouch()
     {
         isCrouch = !isCrouch;
-        if(isCrouch)
+        theCrosshair.CrouchingAnimaion(isCrouch);
+
+        if (isCrouch)
         {
             ApplySpeed = CrouchSpeed;
             ApplyCrouchPosY = CrouchPosY;
@@ -104,6 +120,7 @@ public class PlayerController : MonoBehaviour
 
         StartCoroutine(CrouchCoroutine());
     }
+
     IEnumerator CrouchCoroutine()
     {
         float _posY = theCamera.transform.localPosition.y;
@@ -119,10 +136,15 @@ public class PlayerController : MonoBehaviour
         }
         theCamera.transform.localPosition = new Vector3(0, ApplyCrouchPosY, 0);
     }
+
+    // 지면 체크
     private void GroundCheck()
     {
         isGround = Physics.Raycast(transform.position, Vector3.down, m_CapsuleCollider.bounds.extents.y + EPSILON);
+        theCrosshair.JumpingAnimaion(!isGround);
     }
+
+    // 점프 시도
     private void Jump()
     {
         if (isCrouch) //앉아있었다면 해제
@@ -133,6 +155,7 @@ public class PlayerController : MonoBehaviour
         m_Rigidbody.linearVelocity = Temp;
         //m_Rigidbody.AddForce(transform.up * JumpForce);
     }
+    
     private void Running()
     {
         if (isCrouch)
@@ -141,13 +164,19 @@ public class PlayerController : MonoBehaviour
         theGunController.CancelFineSight();
         
         isRun = true;
+        theCrosshair.RunningAnimaion(isRun);
         ApplySpeed = RunSpeed;
     }
+
+    // 달리기 취소
     private void RunningCancel()
     {
         isRun = false;
+        theCrosshair.RunningAnimaion(isRun);
         ApplySpeed = walkSpeed;
     }
+    
+    // 움직임 실행
     private void Move()
     {
         float _moveDirX = 0;
@@ -169,6 +198,27 @@ public class PlayerController : MonoBehaviour
 
         m_Rigidbody.MovePosition(transform.position + _velocity * Time.fixedDeltaTime);
     }
+    
+    // 움직임 체크
+    private void MoveCheck()
+    {
+        if(!isRun && !isCrouch && isGround)
+        {
+            if (Vector3.Distance(lastPos, transform.position) >= 0.01)
+            {
+                isWalk = true;
+            }
+            else
+            {
+                isWalk = false;
+            }
+
+            theCrosshair.WalkingAnimaion(isWalk);
+            lastPos = transform.position;
+        }
+    }
+
+    // 좌우 캐릭터 회전
     private void CameraRotation()
     {
         //상하카메라회전(마우스)
@@ -179,6 +229,8 @@ public class PlayerController : MonoBehaviour
 
         theCamera.transform.localEulerAngles = new Vector3(CurrentCameraRotationX, 0, 0);
     }
+
+    // 상하 캐릭터 회전
     private void CharacterRotation()
     {
         //좌우 회전
